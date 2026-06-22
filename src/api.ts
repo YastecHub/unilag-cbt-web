@@ -1,6 +1,6 @@
 import type { Course, LeaderboardRow, Result, Settings, Student, TestSession } from "./types";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000/api").replace(/\/$/, "");
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
@@ -41,4 +41,3 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 };
-
