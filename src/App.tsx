@@ -79,8 +79,8 @@ function Countdown({ compact = false }: { compact?: boolean }) {
 }
 
 function WhatsApp({ label = "Join WhatsApp group" }: { label?: string }) {
-  const { settings } = usePortal();
-  return <a className="button whatsapp" href={settings?.whatsapp_group_link || "#"} target="_blank" rel="noreferrer"><MessageCircle />{label}</a>;
+  const groupLink = "https://chat.whatsapp.com/HE6ygkLwwne9oamCED0Q7D?s=sh&p=a&ilr=1";
+  return <a className="button whatsapp" href={groupLink} target="_blank" rel="noreferrer"><MessageCircle />{label}</a>;
 }
 
 function Home() {
