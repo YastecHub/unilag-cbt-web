@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type FormEvent, type Re
 import {
   ArrowLeft, ArrowRight, Award, BarChart3, BookOpen, Check, ChevronRight, Clock3,
   GraduationCap, LayoutDashboard, Menu, MessageCircle, Medal, Settings as SettingsIcon,
-  ShieldCheck, Sparkles, Target, Timer, Trophy, Users, X,
+  LoaderCircle, ShieldCheck, Target, Timer, Trophy, Users, X,
 } from "lucide-react";
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { api } from "./api";
@@ -26,9 +26,9 @@ function PortalProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(30);
   const [session, setSession] = useState<TestSession>();
   useEffect(() => {
-    api.settings().then(setSettings).catch(console.error);
-    api.courses()
-      .then((list) => {
+    api.bootstrap()
+      .then(({ settings: config, courses: list }) => {
+        setSettings(config);
         const available = list.length ? list : fallbackCourses;
         setCourses(available);
         if (student) setCourse(available.find((item) => item.id === student.course_id));
@@ -83,6 +83,20 @@ function WhatsApp({ label = "Join WhatsApp group" }: { label?: string }) {
   return <a className="button whatsapp" href={groupLink} target="_blank" rel="noreferrer"><MessageCircle />{label}</a>;
 }
 
+function ButtonLabel({ loading, idle, busy }: { loading: boolean; idle: string; busy: string }) {
+  return <>{loading && <LoaderCircle className="spinner" />}{loading ? busy : idle}{!loading && <ArrowRight />}</>;
+}
+
+function PageSkeleton({ rows = 5 }: { rows?: number }) {
+  return <div className="skeleton-page" aria-label="Loading content">
+    <div className="skeleton skeleton-title" />
+    <div className="skeleton skeleton-copy" />
+    <div className="skeleton-card">
+      {Array.from({ length: rows }, (_, index) => <div className="skeleton skeleton-row" key={index} />)}
+    </div>
+  </div>;
+}
+
 function Home() {
   const features = [
     [Timer, "Timed CBT practice", "Practise under real exam pressure with flexible timing."],
@@ -92,7 +106,7 @@ function Home() {
   ] as const;
   return <Layout>
     <section className="hero"><div className="container hero-grid">
-      <div><span className="eyebrow"><Sparkles />100% free for UNILAG aspirants</span>
+      <div><div className="hero-badge"><Check />Free for UNILAG aspirants</div>
         <h1>Prepare smarter.<br /><em>Score higher.</em><br />Get into UNILAG.</h1>
         <p className="lead">Take free timed CBT practice tests, see your result instantly, compare your rank, and improve with serious aspirants.</p>
         <div className="actions"><Link className="button" to="/register">Start free test <ArrowRight /></Link><WhatsApp /></div>
@@ -106,7 +120,7 @@ function Home() {
     <section className="section"><div className="container"><div className="section-heading"><span>Everything you need</span><h2>Practice like the real exam</h2><p>A focused CBT experience built around the UNILAG Post-UTME format.</p></div>
       <div className="feature-grid">{features.map(([Icon, title, text]) => <article className="feature-card" key={title}><span className="icon-box"><Icon /></span><h3>{title}</h3><p>{text}</p></article>)}</div>
     </div></section>
-    <section className="cta-section"><div className="container cta-card"><div><span className="eyebrow light">Your next score can be better</span><h2>Ready to test your preparation?</h2><p>Join other aspirants practising before July 27.</p></div><Link className="button light" to="/register">Take a free test <ChevronRight /></Link></div></section>
+    <section className="cta-section"><div className="container cta-card"><div><span className="cta-label">Free practice. No subscription.</span><h2>Ready to test your preparation?</h2><p>Join other aspirants practising before July 27.</p></div><Link className="button light" to="/register">Take a free test <ChevronRight /></Link></div></section>
   </Layout>;
 }
 
@@ -134,7 +148,7 @@ function Register() {
       <div className="field-row"><Field label="UTME score *"><input required type="number" min="0" max="400" value={form.utme_score} onChange={(e) => update("utme_score", e.target.value)} placeholder="0 - 400" /></Field><Field label="Email address"><input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} placeholder="you@email.com" /></Field></div>
       <Field label="Intended UNILAG course *"><select required value={form.course_id} onChange={(e) => update("course_id", e.target.value)}><option value="">Select your course</option>{courses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
       <Field label="WhatsApp number"><input type="tel" inputMode="tel" value={form.whatsapp_number} onChange={(e) => update("whatsapp_number", e.target.value)} placeholder="e.g. 090688913009" /></Field>
-      {error && <p className="error">{error}</p>}<button className="button full" disabled={loading}>{loading ? "Creating profile..." : "Continue to test setup"}<ArrowRight /></button>
+      {error && <p className="error">{error}</p>}<button className="button full" disabled={loading}><ButtonLabel loading={loading} idle="Continue to test setup" busy="Saving your details..." /></button>
     </form>
   </div></section></Layout>;
 }
@@ -164,7 +178,7 @@ function Instructions() {
   const start = async () => { setLoading(true); try { const test = await api.startTest(student.id, duration); setSession(test); localStorage.setItem("unilag-session", JSON.stringify(test)); navigate(`/test/${test.attempt.id}`); } catch (err) { setError(err instanceof Error ? err.message : "Could not start test"); setLoading(false); } };
   return <Layout><section className="page"><div className="container instruction-wrap"><div className="instruction-heading"><span className="icon-box large"><BookOpen /></span><span className="step-label">Step 3 of 3</span><h1>Test instructions</h1><p>Read carefully. Your timer starts immediately.</p></div>
     <div className="card instruction-card">{rules.map((rule, index) => <div className="rule" key={rule}><span>{index + 1}</span><p>{rule}</p></div>)}</div>
-    <div className="ready-card"><div><strong>Ready, {student.full_name.split(" ")[0]}?</strong><span>{course.name} - 40 questions - {duration} minutes</span></div><button className="button" onClick={start} disabled={loading}>{loading ? "Preparing..." : "Start test now"}<ArrowRight /></button></div>{error && <p className="error">{error}</p>}
+    <div className="ready-card"><div><strong>Ready, {student.full_name.split(" ")[0]}?</strong><span>{course.name} - 40 questions - {duration} minutes</span></div><button className="button" onClick={start} disabled={loading}><ButtonLabel loading={loading} idle="Start test now" busy="Loading questions..." /></button></div>{error && <p className="error">{error}</p>}
   </div></section></Layout>;
 }
 
@@ -187,14 +201,14 @@ function Test() {
       <div className="options">{(["A","B","C","D"] as const).map((letter) => <button className={`option ${answers[question.id] === letter ? "selected" : ""}`} key={letter} onClick={() => setAnswers({...answers,[question.id]:letter})}><span>{letter}</span><p>{question[`option_${letter.toLowerCase()}` as keyof typeof question]}</p>{answers[question.id] === letter && <Check />}</button>)}</div>
       <div className="question-actions"><button className="button muted" disabled={index === 0} onClick={() => setIndex(index - 1)}><ArrowLeft />Previous</button><button className="button" disabled={index === totalQuestions - 1} onClick={() => setIndex(index + 1)}>Next<ArrowRight /></button></div>
     </section><aside className="palette"><div className="palette-head"><h3>Question palette</h3><span>{answered}/{totalQuestions} answered</span></div><div className="palette-grid">{session.questions.map((item, i) => <button className={`${answers[item.id] ? "answered" : ""} ${i === index ? "current" : ""}`} onClick={() => setIndex(i)} key={item.id}>{i + 1}</button>)}</div><div className="legend"><span><i className="answered" />Answered</span><span><i />Not answered</span></div></aside></main>
-  </div>{confirm && <div className="modal-backdrop"><div className="modal"><span className="icon-box warning"><ShieldCheck /></span><h2>Submit your test?</h2><p>You answered <strong>{answered} out of {totalQuestions}</strong>. Unanswered questions will be marked wrong.</p><div className="modal-actions"><button className="button muted" onClick={() => setConfirm(false)}>Keep answering</button><button className="button" onClick={submit} disabled={submitting}>{submitting ? "Submitting..." : "Submit test"}</button></div></div></div>}</Layout>;
+  </div>{confirm && <div className="modal-backdrop"><div className="modal"><span className="icon-box warning"><ShieldCheck /></span><h2>Submit your test?</h2><p>You answered <strong>{answered} out of {totalQuestions}</strong>. Unanswered questions will be marked wrong.</p><div className="modal-actions"><button className="button muted" onClick={() => setConfirm(false)} disabled={submitting}>Keep answering</button><button className="button" onClick={submit} disabled={submitting}>{submitting && <LoaderCircle className="spinner" />}{submitting ? "Marking answers..." : "Submit test"}</button></div></div></div>}</Layout>;
 }
 
 function ResultPage() {
   const { attemptId } = useParams(); const [result, setResult] = useState<Result>(); const [error, setError] = useState("");
   useEffect(() => { if (attemptId) api.result(attemptId).then(setResult).catch((err) => setError(err.message)); }, [attemptId]);
   if (error) return <Layout><div className="empty-state"><h2>Result unavailable</h2><p>{error}</p><Link className="button" to="/setup">Start another test</Link></div></Layout>;
-  if (!result) return <Layout><div className="loading">Calculating your result...</div></Layout>;
+  if (!result) return <Layout><div className="container"><PageSkeleton rows={6} /></div></Layout>;
   return <Layout><section className="result-hero"><div className="container"><span className="icon-box success"><Award /></span><p>Test completed</p><h1>Well done, {result.student.full_name.split(" ")[0]}!</h1><span>{result.recommendation}</span></div></section>
     <section className="result-body"><div className="container result-grid"><div className="score-card"><div className="score-circle"><strong>{result.score}</strong><span>/ {result.max_score}</span></div><h2>{result.percentage}%</h2><p>Final score</p><div className="result-mini"><div><strong>{result.correct_answers}</strong><span>Correct</span></div><div><strong>{result.wrong_answers}</strong><span>Wrong</span></div><div><strong>{result.unanswered_questions}</strong><span>Unanswered</span></div></div></div>
       <div className="card rank-card"><div className="rank-icon"><Medal /></div><div><span>Leaderboard rank</span><h2>#{result.leaderboard_rank || "-"}</h2><p>out of {result.total_aspirants} attempts</p></div><Link to="/leaderboard">View leaderboard <ArrowRight /></Link></div>
@@ -206,11 +220,14 @@ function ResultPage() {
 }
 
 function Leaderboard() {
-  const [rows, setRows] = useState<LeaderboardRow[]>([]); const [period, setPeriod] = useState("");
-  useEffect(() => { api.leaderboard(period ? `?period=${period}` : "").then(setRows).catch(console.error); }, [period]);
+  const [rows, setRows] = useState<LeaderboardRow[]>([]); const [period, setPeriod] = useState(""); const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    setLoading(true);
+    api.leaderboard(period ? `?period=${period}` : "").then(setRows).catch(console.error).finally(() => setLoading(false));
+  }, [period]);
   return <Layout><section className="leaderboard-hero"><div className="container"><span className="icon-box gold"><Trophy /></span><h1>Aspirant leaderboard</h1><p>See how you rank among students preparing for UNILAG.</p></div></section>
     <section className="leaderboard-section"><div className="container"><div className="filter-tabs">{[["","Overall"],["today","Today"],["weekly","This week"],["monthly","This month"]].map(([value,label]) => <button className={period === value ? "active" : ""} onClick={() => setPeriod(value)} key={value}>{label}</button>)}</div>
-      <div className="table-card"><table><thead><tr><th>Rank</th><th>Aspirant</th><th>Course</th><th>Score</th><th>Percentage</th><th>Time used</th></tr></thead><tbody>{rows.length ? rows.map((row) => <tr key={row.attempt_id}><td><span className={`rank-number rank-${row.rank}`}>{row.rank}</span></td><td><strong>{row.student_name}</strong></td><td>{row.course}</td><td><strong>{row.score}/{row.max_score}</strong></td><td>{row.percentage}%</td><td>{Math.ceil(row.time_used_seconds / 60)} mins</td></tr>) : <tr><td colSpan={6} className="empty-row">No attempts yet. Be the first on the board.</td></tr>}</tbody></table></div>
+      {loading ? <div className="table-card table-skeleton">{Array.from({ length: 6 }, (_, index) => <div className="skeleton skeleton-table-row" key={index} />)}</div> : <div className="table-card"><table><thead><tr><th>Rank</th><th>Aspirant</th><th>Course</th><th>Score</th><th>Percentage</th><th>Time used</th></tr></thead><tbody>{rows.length ? rows.map((row) => <tr key={row.attempt_id}><td><span className={`rank-number rank-${row.rank}`}>{row.rank}</span></td><td><strong>{row.student_name}</strong></td><td>{row.course}</td><td><strong>{row.score}/{row.max_score}</strong></td><td>{row.percentage}%</td><td>{Math.ceil(row.time_used_seconds / 60)} mins</td></tr>) : <tr><td colSpan={6} className="empty-row">No attempts yet. Be the first on the board.</td></tr>}</tbody></table></div>}
       <div className="leaderboard-cta"><div><h2>Think you can reach the top?</h2><p>Take another test and improve your rank.</p></div><Link className="button" to="/register">Start free test <ArrowRight /></Link><WhatsApp /></div>
     </div></section>
   </Layout>;

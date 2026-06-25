@@ -14,6 +14,11 @@ export type Settings = {
   whatsapp_group_link: string;
 };
 
+export type BootstrapData = {
+  settings: Settings;
+  courses: Course[];
+};
+
 export type Student = {
   id: string;
   full_name: string;
@@ -73,4 +78,3 @@ export type LeaderboardRow = {
   time_used_seconds: number;
   submitted_at: string;
 };
-
