@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowLeft, ArrowRight, Award, BarChart3, BookOpen, Check, ChevronRight, Clock3,
-  GraduationCap, LayoutDashboard, Menu, MessageCircle, Medal, Settings as SettingsIcon,
-  LoaderCircle, ShieldCheck, Target, Timer, Trophy, Users, X,
+  Eye, EyeOff, GraduationCap, LayoutDashboard, LoaderCircle, LogOut, Menu, MessageCircle,
+  Medal, Settings as SettingsIcon, ShieldCheck, Target, Timer, Trophy, Users, X,
 } from "lucide-react";
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { api } from "./api";
@@ -235,13 +235,25 @@ function Leaderboard() {
 
 function Admin() {
   const [token, setToken] = useState(sessionStorage.getItem("admin-token") || ""); const [stats, setStats] = useState<Record<string, number | [string,number][]>>();
-  const [credentials, setCredentials] = useState({ email: "admin@unilagcbt.local", password: "" }); const [error, setError] = useState("");
-  const login = async (event: FormEvent) => { event.preventDefault(); try { const data = await api.adminLogin(credentials.email, credentials.password); setToken(data.access_token); sessionStorage.setItem("admin-token",data.access_token); } catch (err) { setError(err instanceof Error ? err.message : "Login failed"); } };
-  useEffect(() => { if (token) api.adminDashboard(token).then(setStats).catch(() => setToken("")); }, [token]);
-  if (!token) return <Layout><section className="admin-login"><form className="card admin-login-card" onSubmit={login}><span className="icon-box"><ShieldCheck /></span><h1>Admin login</h1><p>Manage questions, courses, settings, and results.</p><Field label="Email"><input type="email" value={credentials.email} onChange={(e) => setCredentials({...credentials,email:e.target.value})} /></Field><Field label="Password"><input required type="password" value={credentials.password} onChange={(e) => setCredentials({...credentials,password:e.target.value})} /></Field>{error && <p className="error">{error}</p>}<button className="button full">Sign in securely</button></form></section></Layout>;
+  const [credentials, setCredentials] = useState({ email: "", password: "" }); const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false); const [loading, setLoading] = useState(false);
+  const logout = () => { sessionStorage.removeItem("admin-token"); setToken(""); setStats(undefined); };
+  const login = async (event: FormEvent) => {
+    event.preventDefault(); setError(""); setLoading(true);
+    try {
+      const data = await api.adminLogin(credentials.email.trim(), credentials.password);
+      setToken(data.access_token); sessionStorage.setItem("admin-token",data.access_token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { if (token) api.adminDashboard(token).then(setStats).catch(logout); }, [token]);
+  if (!token) return <Layout><section className="admin-login"><form className="card admin-login-card" onSubmit={login}><span className="icon-box"><ShieldCheck /></span><h1>Admin login</h1><p>Sign in to manage questions, courses, settings, and results.</p><Field label="Email address"><input required autoComplete="email" inputMode="email" type="email" value={credentials.email} onChange={(e) => setCredentials({...credentials,email:e.target.value})} placeholder="Enter your admin email" /></Field><div className="field"><span>Password</span><div className="password-field"><input required autoComplete="current-password" type={showPassword ? "text" : "password"} value={credentials.password} onChange={(e) => setCredentials({...credentials,password:e.target.value})} placeholder="Enter your password" /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff /> : <Eye />}</button></div></div>{error && <p className="error" role="alert">{error}</p>}<button className="button full" disabled={loading}><ButtonLabel loading={loading} idle="Sign in" busy="Signing in..." /></button></form></section></Layout>;
   const cards = [[Users,"Registered students",stats?.total_registered_students || 0],[BookOpen,"Test attempts",stats?.total_test_attempts || 0],[Target,"Average score",`${stats?.average_score || 0}/40`],[Trophy,"Highest score",`${stats?.highest_score || 0}/40`]] as const;
-  return <Layout minimal><div className="admin-shell"><aside className="admin-sidebar"><Brand /><nav><a className="active"><LayoutDashboard />Overview</a><a><BookOpen />Questions</a><a><GraduationCap />Courses</a><a><Users />Students</a><a><Trophy />Leaderboard</a><a><SettingsIcon />Settings</a></nav><button onClick={() => { sessionStorage.removeItem("admin-token"); setToken(""); }}>Sign out</button></aside>
-    <main className="admin-main"><div className="admin-top"><div><p>Admin workspace</p><h1>Dashboard overview</h1></div><Link className="button outline" to="/">View portal</Link></div><div className="admin-stat-grid">{cards.map(([Icon,label,value]) => <article key={label}><span className="icon-box"><Icon /></span><div><p>{label}</p><h2>{String(value)}</h2></div></article>)}</div>
+  return <Layout minimal><div className="admin-shell"><div className="admin-mobile-bar"><Brand /><button onClick={logout}><LogOut />Sign out</button></div><aside className="admin-sidebar"><Brand /><nav><a className="active"><LayoutDashboard />Overview</a><a><BookOpen />Questions</a><a><GraduationCap />Courses</a><a><Users />Students</a><a><Trophy />Leaderboard</a><a><SettingsIcon />Settings</a></nav><button onClick={logout}>Sign out</button></aside>
+    <main className="admin-main"><div className="admin-top"><div><p>Admin workspace</p><h1>Dashboard overview</h1></div><Link className="button outline" to="/">View portal</Link></div><div className="admin-stat-grid">{stats ? cards.map(([Icon,label,value]) => <article key={label}><span className="icon-box"><Icon /></span><div><p>{label}</p><h2>{String(value)}</h2></div></article>) : Array.from({ length: 4 }, (_, index) => <article className="admin-stat-loading" key={index}><div className="skeleton skeleton-admin-icon" /><div><div className="skeleton skeleton-admin-label" /><div className="skeleton skeleton-admin-value" /></div></article>)}</div>
       <div className="admin-grid"><div className="card"><h2>Quick actions</h2><div className="quick-actions"><button><BookOpen />Add a question<ChevronRight /></button><button><GraduationCap />Manage courses<ChevronRight /></button><button><SettingsIcon />Update exam settings<ChevronRight /></button></div></div><div className="card"><h2>Platform status</h2>{["API and database","40-question grading","Leaderboard"].map((item) => <div className="status-line" key={item}><span><i />{item}</span><strong>Operational</strong></div>)}</div></div>
     </main>
   </div></Layout>;
