@@ -5,6 +5,7 @@ import {
   Medal, Settings as SettingsIcon, ShieldCheck, Target, Timer, Trophy, Users, X,
 } from "lucide-react";
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import { api } from "./api";
 import { fallbackCourses } from "./courseData";
 import type { Course, LeaderboardRow, Result, Settings, Student, TestSession } from "./types";
@@ -260,5 +261,5 @@ function Admin() {
 }
 
 export default function App() {
-  return <PortalProvider><Routes><Route path="/" element={<Home />} /><Route path="/register" element={<Register />} /><Route path="/setup" element={<Setup />} /><Route path="/instructions" element={<Instructions />} /><Route path="/test/:attemptId" element={<Test />} /><Route path="/result/:attemptId" element={<ResultPage />} /><Route path="/leaderboard" element={<Leaderboard />} /><Route path="/admin" element={<Admin />} /><Route path="*" element={<Navigate to="/" />} /></Routes></PortalProvider>;
+  return <PortalProvider><Routes><Route path="/" element={<Home />} /><Route path="/register" element={<Register />} /><Route path="/setup" element={<Setup />} /><Route path="/instructions" element={<Instructions />} /><Route path="/test/:attemptId" element={<Test />} /><Route path="/result/:attemptId" element={<ResultPage />} /><Route path="/leaderboard" element={<Leaderboard />} /><Route path="/admin" element={<Admin />} /><Route path="*" element={<Navigate to="/" />} /></Routes><Analytics /></PortalProvider>;
 }
