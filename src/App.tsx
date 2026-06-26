@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowLeft, ArrowRight, Award, BarChart3, BookOpen, Check, ChevronRight, Clock3,
-  Eye, EyeOff, GraduationCap, LayoutDashboard, LoaderCircle, LogOut, Menu, MessageCircle,
-  Medal, Settings as SettingsIcon, ShieldCheck, Target, Timer, Trophy, Users, X,
+  Eye, EyeOff, GraduationCap, LoaderCircle, Menu, MessageCircle, Medal, ShieldCheck,
+  Target, Timer, Trophy, X,
 } from "lucide-react";
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
+import AdminPanel from "./AdminPanel";
 import { api } from "./api";
 import { fallbackCourses } from "./courseData";
 import type { Course, LeaderboardRow, Result, Settings, Student, TestSession } from "./types";
@@ -235,10 +236,10 @@ function Leaderboard() {
 }
 
 function Admin() {
-  const [token, setToken] = useState(sessionStorage.getItem("admin-token") || ""); const [stats, setStats] = useState<Record<string, number | [string,number][]>>();
+  const [token, setToken] = useState(sessionStorage.getItem("admin-token") || "");
   const [credentials, setCredentials] = useState({ email: "", password: "" }); const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false); const [loading, setLoading] = useState(false);
-  const logout = () => { sessionStorage.removeItem("admin-token"); setToken(""); setStats(undefined); };
+  const logout = () => { sessionStorage.removeItem("admin-token"); setToken(""); };
   const login = async (event: FormEvent) => {
     event.preventDefault(); setError(""); setLoading(true);
     try {
@@ -250,14 +251,8 @@ function Admin() {
       setLoading(false);
     }
   };
-  useEffect(() => { if (token) api.adminDashboard(token).then(setStats).catch(logout); }, [token]);
   if (!token) return <Layout><section className="admin-login"><form className="card admin-login-card" onSubmit={login}><span className="icon-box"><ShieldCheck /></span><h1>Admin login</h1><p>Sign in to manage questions, courses, settings, and results.</p><Field label="Email address"><input required autoComplete="email" inputMode="email" type="email" value={credentials.email} onChange={(e) => setCredentials({...credentials,email:e.target.value})} placeholder="Enter your admin email" /></Field><div className="field"><span>Password</span><div className="password-field"><input required autoComplete="current-password" type={showPassword ? "text" : "password"} value={credentials.password} onChange={(e) => setCredentials({...credentials,password:e.target.value})} placeholder="Enter your password" /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff /> : <Eye />}</button></div></div>{error && <p className="error" role="alert">{error}</p>}<button className="button full" disabled={loading}><ButtonLabel loading={loading} idle="Sign in" busy="Signing in..." /></button></form></section></Layout>;
-  const cards = [[Users,"Registered students",stats?.total_registered_students || 0],[BookOpen,"Test attempts",stats?.total_test_attempts || 0],[Target,"Average score",`${stats?.average_score || 0}/40`],[Trophy,"Highest score",`${stats?.highest_score || 0}/40`]] as const;
-  return <Layout minimal><div className="admin-shell"><div className="admin-mobile-bar"><Brand /><button onClick={logout}><LogOut />Sign out</button></div><aside className="admin-sidebar"><Brand /><nav><a className="active"><LayoutDashboard />Overview</a><a><BookOpen />Questions</a><a><GraduationCap />Courses</a><a><Users />Students</a><a><Trophy />Leaderboard</a><a><SettingsIcon />Settings</a></nav><button onClick={logout}>Sign out</button></aside>
-    <main className="admin-main"><div className="admin-top"><div><p>Admin workspace</p><h1>Dashboard overview</h1></div><Link className="button outline" to="/">View portal</Link></div><div className="admin-stat-grid">{stats ? cards.map(([Icon,label,value]) => <article key={label}><span className="icon-box"><Icon /></span><div><p>{label}</p><h2>{String(value)}</h2></div></article>) : Array.from({ length: 4 }, (_, index) => <article className="admin-stat-loading" key={index}><div className="skeleton skeleton-admin-icon" /><div><div className="skeleton skeleton-admin-label" /><div className="skeleton skeleton-admin-value" /></div></article>)}</div>
-      <div className="admin-grid"><div className="card"><h2>Quick actions</h2><div className="quick-actions"><button><BookOpen />Add a question<ChevronRight /></button><button><GraduationCap />Manage courses<ChevronRight /></button><button><SettingsIcon />Update exam settings<ChevronRight /></button></div></div><div className="card"><h2>Platform status</h2>{["API and database","40-question grading","Leaderboard"].map((item) => <div className="status-line" key={item}><span><i />{item}</span><strong>Operational</strong></div>)}</div></div>
-    </main>
-  </div></Layout>;
+  return <AdminPanel token={token} onLogout={logout} />;
 }
 
 export default function App() {

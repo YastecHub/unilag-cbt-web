@@ -4,6 +4,7 @@ export type Course = {
   faculty: string;
   utme_subjects: string[];
   final_test_subjects: string[];
+  is_active?: boolean;
 };
 
 export type Settings = {
@@ -25,6 +26,8 @@ export type Student = {
   utme_score: number;
   course_id: string;
   email?: string;
+  whatsapp_number?: string;
+  created_at?: string;
 };
 
 export type Question = {
@@ -77,4 +80,32 @@ export type LeaderboardRow = {
   percentage: number;
   time_used_seconds: number;
   submitted_at: string;
+};
+
+export type AdminQuestion = {
+  id: string;
+  subject: string;
+  topic?: string;
+  question: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_answer: "A" | "B" | "C" | "D";
+  explanation?: string;
+  difficulty?: string;
+  year?: string;
+};
+
+export type AdminAttempt = {
+  id: string;
+  student_name: string;
+  course_name: string;
+  status: string;
+  score?: number;
+  max_score: number;
+  percentage?: number;
+  duration_selected_minutes: number;
+  time_used_seconds?: number;
+  created_at: string;
 };

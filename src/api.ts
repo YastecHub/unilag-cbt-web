@@ -1,17 +1,19 @@
-import type { BootstrapData, Course, LeaderboardRow, Result, Settings, Student, TestSession } from "./types";
+import type { AdminAttempt, AdminQuestion, BootstrapData, Course, LeaderboardRow, Result, Settings, Student, TestSession } from "./types";
 
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000/api").replace(/\/$/, "");
 const pending = new Map<string, Promise<unknown>>();
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const isFormData = options?.body instanceof FormData;
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
-    headers: { "Content-Type": "application/json", ...options?.headers },
+    headers: { ...(!isFormData ? { "Content-Type": "application/json" } : {}), ...options?.headers },
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({ detail: "Something went wrong" }));
     throw new Error(body.detail || "Something went wrong");
   }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 
@@ -87,4 +89,28 @@ export const api = {
     request<Record<string, number | [string, number][]>>("/admin/dashboard", {
       headers: { Authorization: `Bearer ${token}` },
     }),
+  adminQuestions: (token: string) => request<AdminQuestion[]>("/admin/questions", { headers: { Authorization: `Bearer ${token}` } }),
+  addQuestion: (token: string, body: Omit<AdminQuestion, "id">) =>
+    request<AdminQuestion>("/admin/questions", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }),
+  updateQuestion: (token: string, id: string, body: Omit<AdminQuestion, "id">) =>
+    request<AdminQuestion>(`/admin/questions/${id}`, { method: "PUT", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }),
+  deleteQuestion: (token: string, id: string) =>
+    request<void>(`/admin/questions/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }),
+  uploadQuestions: (token: string, file: File) => {
+    const body = new FormData(); body.append("file", file);
+    return request<{ created: number; errors: { line: number; error: string }[] }>("/admin/questions/bulk-upload", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body });
+  },
+  adminCourses: (token: string) => request<Course[]>("/admin/courses", { headers: { Authorization: `Bearer ${token}` } }),
+  addCourse: (token: string, body: Course) =>
+    request<Course>("/admin/courses", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }),
+  updateCourse: (token: string, id: string, body: Course) =>
+    request<Course>(`/admin/courses/${id}`, { method: "PUT", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }),
+  deleteCourse: (token: string, id: string) =>
+    request<void>(`/admin/courses/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }),
+  adminStudents: (token: string) => request<Student[]>("/admin/students", { headers: { Authorization: `Bearer ${token}` } }),
+  adminAttempts: (token: string) => request<AdminAttempt[]>("/admin/test-attempts", { headers: { Authorization: `Bearer ${token}` } }),
+  adminLeaderboard: (token: string) => request<LeaderboardRow[]>("/admin/leaderboard", { headers: { Authorization: `Bearer ${token}` } }),
+  adminSettings: (token: string) => request<Settings>("/admin/settings", { headers: { Authorization: `Bearer ${token}` } }),
+  updateSettings: (token: string, body: Partial<Settings>) =>
+    request<Settings>("/admin/settings", { method: "PUT", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }),
 };
