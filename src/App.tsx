@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowLeft, ArrowRight, Award, BarChart3, BookOpen, Check, ChevronRight, Clock3,
-  Eye, EyeOff, GraduationCap, LoaderCircle, Menu, MessageCircle, Medal, ShieldCheck,
+  Eye, EyeOff, GraduationCap, LoaderCircle, Menu, Medal, ShieldCheck,
   Target, Timer, Trophy, X,
 } from "lucide-react";
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
@@ -56,7 +56,7 @@ function Header() {
   return <header className="site-header"><div className="container nav-wrap"><Brand />
     <button className="menu-button" onClick={() => setOpen(!open)} aria-label="Toggle menu">{open ? <X /> : <Menu />}</button>
     <nav className={open ? "nav-links open" : "nav-links"}>
-      <Link to="/">Home</Link><Link to="/leaderboard">Leaderboard</Link><Link to="/admin">Admin</Link>
+      <Link to="/">Home</Link><Link to="/leaderboard">Leaderboard</Link>
       <Link className="button small" to="/register">Start free test</Link>
     </nav>
   </div></header>;
@@ -82,7 +82,13 @@ function Countdown({ compact = false }: { compact?: boolean }) {
 
 function WhatsApp({ label = "Join WhatsApp group" }: { label?: string }) {
   const groupLink = "https://chat.whatsapp.com/HE6ygkLwwne9oamCED0Q7D?s=sh&p=a&ilr=1";
-  return <a className="button whatsapp" href={groupLink} target="_blank" rel="noreferrer"><MessageCircle />{label}</a>;
+  return <a className="button whatsapp" href={groupLink} target="_blank" rel="noreferrer"><WhatsAppLogo />{label}</a>;
+}
+
+function WhatsAppLogo() {
+  return <svg className="whatsapp-logo" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+    <path fill="currentColor" d="M16.02 3.2C9 3.2 3.29 8.9 3.29 15.93c0 2.25.59 4.44 1.7 6.37L3.2 28.8l6.65-1.74a12.74 12.74 0 0 0 6.16 1.57h.01c7.02 0 12.73-5.71 12.73-12.73S23.04 3.2 16.02 3.2Zm0 23.28h-.01c-1.85 0-3.66-.5-5.24-1.43l-.38-.23-3.94 1.04 1.05-3.85-.25-.39a10.55 10.55 0 0 1-1.8-5.9c0-5.83 4.75-10.58 10.59-10.58a10.5 10.5 0 0 1 7.48 3.1 10.5 10.5 0 0 1 3.1 7.48c0 5.84-4.75 10.59-10.6 10.59Zm5.8-7.92c-.32-.16-1.88-.93-2.17-1.03-.29-.11-.5-.16-.72.16-.21.32-.82 1.03-1 1.24-.19.21-.37.24-.69.08-.32-.16-1.34-.49-2.55-1.57-.94-.84-1.58-1.88-1.77-2.2-.19-.32-.02-.49.14-.65.14-.14.32-.37.48-.56.16-.19.21-.32.32-.53.11-.21.05-.4-.03-.56-.08-.16-.72-1.73-.98-2.36-.26-.62-.52-.53-.72-.54h-.61c-.21 0-.56.08-.85.4-.29.32-1.11 1.09-1.11 2.65s1.14 3.08 1.3 3.29c.16.21 2.24 3.42 5.42 4.79.76.33 1.35.52 1.81.67.76.24 1.45.21 2 .13.61-.09 1.88-.77 2.15-1.51.27-.74.27-1.38.19-1.51-.08-.13-.29-.21-.61-.37Z" />
+  </svg>;
 }
 
 function ButtonLabel({ loading, idle, busy }: { loading: boolean; idle: string; busy: string }) {
@@ -108,8 +114,7 @@ function Home() {
   ] as const;
   return <Layout>
     <section className="hero"><div className="container hero-grid">
-      <div><div className="hero-badge"><Check />Free for UNILAG aspirants</div>
-        <h1>Prepare smarter.<br /><em>Score higher.</em><br />Get into UNILAG.</h1>
+      <div><h1>Prepare smarter.<br /><em>Score higher.</em><br />Get into UNILAG.</h1>
         <p className="lead">Take free timed CBT practice tests, see your result instantly, compare your rank, and improve with serious aspirants.</p>
         <div className="actions"><Link className="button" to="/register">Start free test <ArrowRight /></Link><WhatsApp /></div>
         <div className="trust"><span><Check />No payment</span><span><Check />Instant results</span><span><Check />40 questions</span></div>
@@ -166,7 +171,7 @@ function Setup() {
       <div className="subject-list">{course.final_test_subjects.map((subject, index) => <div key={subject}><span>{index + 1}</span>{subject}<Check /></div>)}</div></div>
       <div className="card"><h3>Test details</h3><div className="stats-row"><div><strong>{settings?.total_questions || 40}</strong><span>Questions</span></div><div><strong>{settings?.max_score || 40}</strong><span>Total marks</span></div><div><strong>1</strong><span>Mark each</span></div></div>
         <h3>Choose test duration</h3><div className="duration-grid">{(settings?.available_durations || [10,15,20,30,45,60]).map((item) => <button className={duration === item ? "duration active" : "duration"} onClick={() => setDuration(item)} key={item}><Clock3 />{item} mins</button>)}</div>
-        <Link className="button full" to="/instructions">Continue to instructions <ArrowRight /></Link><div className="whatsapp-note"><MessageCircle />Daily questions are waiting in our free study group.</div>
+        <Link className="button full" to="/instructions">Continue to instructions <ArrowRight /></Link><div className="whatsapp-note"><WhatsAppLogo />Daily questions are waiting in our free study group.</div>
       </div>
     </div>
   </div></section></Layout>;
@@ -216,7 +221,7 @@ function ResultPage() {
       <div className="card rank-card"><div className="rank-icon"><Medal /></div><div><span>Leaderboard rank</span><h2>#{result.leaderboard_rank || "-"}</h2><p>out of {result.total_aspirants} attempts</p></div><Link to="/leaderboard">View leaderboard <ArrowRight /></Link></div>
       <div className="card breakdown"><h2>Subject breakdown</h2>{Object.entries(result.subject_breakdown).map(([subject, score]) => <div className="breakdown-row" key={subject}><div><span>{subject}</span><strong>{score.correct}/{score.total}</strong></div><div className="bar"><span style={{width:`${score.correct / score.total * 100}%`}} /></div></div>)}</div>
       <div className="card details"><h2>Test details</h2><dl><div><dt>Course</dt><dd>{result.course.name}</dd></div><div><dt>UTME score</dt><dd>{result.student.utme_score}</dd></div><div><dt>Duration</dt><dd>{result.duration_selected_minutes} mins</dd></div><div><dt>Time used</dt><dd>{Math.ceil(result.time_used_seconds / 60)} mins</dd></div></dl><Link className="button full" to="/setup">Take another test <ArrowRight /></Link></div>
-      <div className="whatsapp-card"><MessageCircle /><div><h2>Improve before July 27</h2><p>Get daily questions and explanations with other aspirants.</p></div><WhatsApp label="Join free study group" /></div>
+      <div className="whatsapp-card"><WhatsAppLogo /><div><h2>Get the solutions to this test</h2><p>Join the WhatsApp group to receive the solutions and explanations for your submitted test, plus daily practice with other aspirants.</p></div><WhatsApp label="Join group for solutions" /></div>
     </div></section>
   </Layout>;
 }

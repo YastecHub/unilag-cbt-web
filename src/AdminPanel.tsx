@@ -132,7 +132,13 @@ export default function AdminPanel({ token, onLogout }: { token: string; onLogou
 }
 
 function Overview({ stats, navigate }: { stats?: Stats; navigate: (tab: Tab) => void }) {
-  const cards = [["Registered students", stats?.total_registered_students || 0], ["Test attempts", stats?.total_test_attempts || 0], ["Average score", `${stats?.average_score || 0}/40`], ["Highest score", `${stats?.highest_score || 0}/40`]];
+  const getMetricValue = (value: number | [string, number][] | undefined) => (typeof value === "number" ? value : 0);
+  const cards: Array<[string, string | number]> = [
+    ["Registered students", getMetricValue(stats?.total_registered_students)],
+    ["Test attempts", getMetricValue(stats?.total_test_attempts)],
+    ["Average score", `${getMetricValue(stats?.average_score)}/40`],
+    ["Highest score", `${getMetricValue(stats?.highest_score)}/40`],
+  ];
   return <><div className="admin-stat-grid">{cards.map(([label, value]) => <article key={label}><div><p>{label}</p><h2>{String(value)}</h2></div></article>)}</div><div className="admin-grid"><div className="card"><h2>Quick actions</h2><div className="quick-actions"><button onClick={() => navigate("questions")}><BookOpen />Add or manage questions<ChevronRight /></button><button onClick={() => navigate("courses")}><GraduationCap />Manage courses<ChevronRight /></button><button onClick={() => navigate("settings")}><SettingsIcon />Update platform settings<ChevronRight /></button></div></div><div className="card"><h2>Platform status</h2>{["API and database", "40-question grading", "Leaderboard"].map((item) => <div className="status-line" key={item}><span><i />{item}</span><strong>Operational</strong></div>)}</div></div></>;
 }
 
